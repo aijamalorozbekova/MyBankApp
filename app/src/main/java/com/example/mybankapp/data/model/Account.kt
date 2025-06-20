@@ -1,7 +1,7 @@
 package com.example.mybankapp.data.model
 
 data class Account (
-    val id: String? = null,
+    val accountId: String? = null,
     val name: String,
     val balance: Int,
     val currency: String,
