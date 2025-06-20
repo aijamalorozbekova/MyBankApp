@@ -1,7 +1,6 @@
 package com.example.mybankapp.ui
 
 import android.app.AlertDialog
-import android.app.Dialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.Toast
@@ -35,7 +34,17 @@ class MainActivity : AppCompatActivity(), AccountContract.View {
     }
 
     private fun initAdapter(){
-        accountAdapter = AccountAdapter()
+        accountAdapter = AccountAdapter(
+            onEdit = {
+                showAccountDialog(it) { editedAccount -> presenter.updateAccount(editedAccount) }
+            },
+            onStatusToggle = { id, isChecked ->
+                presenter.patchAccountStatus(id, isChecked)
+            },
+            onDelete = {
+                presenter.deleteAccount(it)
+            }
+        )
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = accountAdapter
     }
@@ -43,34 +52,46 @@ class MainActivity : AppCompatActivity(), AccountContract.View {
     private fun initClicks() {
         with(binding){
             btnAdd.setOnClickListener {
-                showAddDialog { presenter.addAccount(it)
+                showAccountDialog { presenter.addAccount(it)
                 }
             }
         }
     }
 
-    private fun showAddDialog(action: (Account) -> Unit){
+    private fun showAccountDialog(account: Account? = null, action: (Account) -> Unit) {
         val dialogVB = DialogAddAccountBinding.inflate(LayoutInflater.from(this))
+        with(dialogVB) {
 
-        AlertDialog.Builder(this)
-            .setTitle("Добавить счет")
-            .setView(dialogVB.root)
-            .setPositiveButton("Добавить") { dialog, _ ->
-                with(dialogVB) {
+            account?.let {
+                etName.setText(it.name)
+                etBalance.setText(it.balance.toString())
+                etCurrency.setText(it.currency)
+            }
+
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle(if (account == null) "Добавить счет" else "Изменить счет")
+                .setView(dialogVB.root)
+                .setPositiveButton(if (account == null) "Добавить" else "Изменить") { dialog, _ ->
                     val name = etName.text.toString()
                     val balance = etBalance.text.toString().toInt()
                     val currency = etCurrency.text.toString()
-                    val account = Account (
+                    val newAccount = account?.copy(
+                        name = name,
+                        balance = balance,
+                        currency = currency,
+                        isActive = account.isActive
+                    ) ?: Account(
                         name = name,
                         balance = balance,
                         currency = currency,
                         isActive = true
+
                     )
-                    action.invoke(account)
+                    action.invoke(newAccount)
                 }
-            }
-            .setNegativeButton("Отмена", null)
-            .show()
+                .setNegativeButton("Отмена", null)
+                .show()
+        }
     }
 
     override fun showAccounts(accounts: List<Account>) {
@@ -78,6 +99,10 @@ class MainActivity : AppCompatActivity(), AccountContract.View {
     }
 
     override fun showError(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun showSuccess(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }

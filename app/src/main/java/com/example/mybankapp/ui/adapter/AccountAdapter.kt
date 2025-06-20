@@ -1,15 +1,16 @@
 package com.example.mybankapp.ui.adapter
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.mybankapp.R
 import com.example.mybankapp.data.model.Account
-import com.example.mybankapp.presenter.AccountContract
+import com.example.mybankapp.databinding.ItemAccountBinding
 
-class AccountAdapter: RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() {
+class AccountAdapter(
+    val onEdit: (Account) -> Unit,
+    val onDelete: (String) -> Unit,
+    val onStatusToggle: (String, Boolean) -> Unit
+): RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() {
 
     private val items = mutableListOf<Account>()
 
@@ -20,8 +21,8 @@ class AccountAdapter: RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() {
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AccountViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_account, parent, false)
-        return AccountViewHolder(view)
+        val binding = ItemAccountBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return AccountViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: AccountViewHolder, position: Int) {
@@ -31,10 +32,28 @@ class AccountAdapter: RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() {
     override fun getItemCount(): Int = items.size
 
 
-    inner class AccountViewHolder(view: View): RecyclerView.ViewHolder(view) {
-        fun bind(account: Account) = with(itemView){
-            findViewById<TextView>(R.id.tv_name).text = account.name
-            findViewById<TextView>(R.id.tv_balance).text = account.balance.toString()
+    inner class AccountViewHolder(private val binding: ItemAccountBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(account: Account) = with(binding) {
+            account.apply {
+                tvName.text = name
+                tvBalance.text = balance.toString()
+                btnEdit.setOnClickListener {
+                    onEdit(this)
+                }
+                btnDelete.setOnClickListener {
+                    accountId?.let {
+                        onDelete(it)
+                    }
+                }
+                switchActive.apply {
+                    setOnCheckedChangeListener(null)
+                    isChecked = isActive
+                    setOnCheckedChangeListener { buttonView, isChecked ->
+                        account.accountId?.let { onStatusToggle(it, isChecked) }
+                    }
+                }
+            }
         }
     }
 }

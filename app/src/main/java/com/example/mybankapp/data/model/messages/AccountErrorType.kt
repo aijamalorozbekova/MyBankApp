@@ -1,4 +1,4 @@
-package com.example.mybankapp.data.model
+package com.example.mybankapp.data.model.messages
 
 enum class AccountErrorType(val message: String) {
     ACCOUNT_FETCH_ERROR("Ошибка загрузки счетов"),
