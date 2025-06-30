@@ -1,57 +1,69 @@
-package com.example.mybankapp.presenter
+package com.example.mybankapp.viewmodel
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import com.example.mybankapp.data.api.ApiClient
 import com.example.mybankapp.data.model.Account
 import com.example.mybankapp.data.model.messages.AccountErrorType
 import com.example.mybankapp.data.model.AccountStatusPatch
 import com.example.mybankapp.data.model.messages.AccountSuccessType
-import com.example.mybankapp.data.model.messages.errorMessage
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class AccountPresenter(val view: AccountContract.View): AccountContract.Presenter {
+class AccountViewModel: ViewModel(){
 
-    override fun loadAccounts() {
+    private val _accounts = MutableLiveData<List<Account>>()
+    val accounts: LiveData<List<Account>> = _accounts
+
+    private val _errorMessage = MutableLiveData<AccountErrorType>()
+    val errorMessage: LiveData<AccountErrorType> =_errorMessage
+
+    private val _successMessage = MutableLiveData<AccountSuccessType>()
+    val successMessage: LiveData<AccountSuccessType> =_successMessage
+
+    fun loadAccounts() {
         ApiClient.accountApi.getAccounts().handleResponse(
-            onSuccess = {view.showAccounts(it)},
-            onError = {view.showError(AccountErrorType.ACCOUNT_FETCH_ERROR.errorMessage(it))
+            onSuccess = {_accounts.value = it},
+            onError = {_errorMessage.value = AccountErrorType.ACCOUNT_FETCH_ERROR
             }
         )
     }
 
-    override fun addAccount(account: Account) {
+    fun addAccount(account: Account) {
         ApiClient.accountApi.createAccount(account).handleResponse(
             onSuccess = { loadAccounts()},
-            onError = {view.showError(AccountErrorType.ACCOUNT_ADD_ERROR.errorMessage(it))}
+            onError = {_errorMessage.value = AccountErrorType.ACCOUNT_ADD_ERROR
+            }
         )
     }
 
-    override fun updateAccount(account: Account) {
+    fun updateAccount(account: Account) {
         ApiClient.accountApi.updateAccountFully(
             id = account.accountId!!,
             account = account
         ).handleResponse(
             onSuccess = {
-                view.showSuccess(AccountSuccessType.ACCOUNT_UPDATED.message)
+                _successMessage.value = AccountSuccessType.ACCOUNT_UPDATED
                 loadAccounts()
             }
         )
     }
 
-    override fun patchAccountStatus(id: String, isActive: Boolean) {
+    fun patchAccountStatus(id: String, isActive: Boolean) {
         ApiClient.accountApi.patchAccountStatus(id, AccountStatusPatch(isActive)).handleResponse(
             onSuccess = {
-                view.showSuccess(AccountSuccessType.ACCOUNT_STATUS_SUCCESS.message)
+                _successMessage.value = AccountSuccessType.ACCOUNT_STATUS_SUCCESS
                 loadAccounts()
             }
         )
     }
 
-    override fun deleteAccount(id: String) {
+    fun deleteAccount(id: String) {
         ApiClient.accountApi.deleteAccount(id).handleResponse(
             onSuccess = {
-                view.showSuccess(AccountSuccessType.ACCOUNT_DELETED.message)
+                _successMessage.value = AccountSuccessType.ACCOUNT_DELETED
                 loadAccounts()
             }
         )
